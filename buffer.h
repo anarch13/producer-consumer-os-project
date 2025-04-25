@@ -22,9 +22,9 @@ public:
 
     void insertItem(int id, int item) {
         sem_wait(&empty);
+        if(!running) return;
         pthread_mutex_lock(&mutex);
 
-        if(!running) return;
         buffer[in] = item;
         string msg = "Producer " + to_string(id) + " produced: " + to_string(item) + " at index " + to_string(in);
         cout << msg << "\n";
@@ -37,9 +37,9 @@ public:
 
     void removeItem(int id) {
         sem_wait(&full);
+        if(!running) return;
         pthread_mutex_lock(&mutex);
 
-        if(!running) return;
         int item = buffer[out];
         string msg = "Consumer " + to_string(id) + " consumed: " + to_string(item) + " at index " + to_string(out);
         cout << msg << "\n";
