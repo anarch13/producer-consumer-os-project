@@ -62,7 +62,7 @@ struct Logger {
         pthread_cond_destroy(&cv);
     }
 
-    void log(const std::string &msg) {
+    void log(const string &msg) {
         pthread_mutex_lock(&mtx);
         string timestamp = getCurrentTime();
         string log_msg = "[" + timestamp + "] " + msg;
