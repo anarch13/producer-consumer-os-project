@@ -1,42 +1,98 @@
-#include <iostream>
+#pragma once
+#include <pthread.h>
 #include <fstream>
 #include <string>
+#include <queue>
+#include <stdexcept>
+#include <chrono>
 #include <ctime>
+#include <iomanip>
+#include <sstream>
 
 using namespace std;
+using namespace std::chrono;
 
 string getCurrentTime() {
-    time_t now = time(nullptr);           
-    tm *ltm = localtime(&now);  
+    using namespace std::chrono;
+    
+    auto now = system_clock::now();
+    auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000; 
 
-    char buf[20];
-    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", ltm); 
-    return string(buf);        
+    time_t t = system_clock::to_time_t(now);
+    tm* ltm = localtime(&t);
+
+    char buf[30];
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", ltm);
+
+    stringstream ss;
+    ss << buf << "." << setfill('0') << setw(3) << ms.count();
+
+    return ss.str();
 }
 
-class Logger {
-public:
-    Logger(const string& filename) {
-        log_file.open(filename, ios::out | ios::app);
-        if (!log_file.is_open()) {
-            throw std::runtime_error("Failed to open log file");
-        }
+
+struct Logger {
+    ofstream ofs;
+    pthread_mutex_t mtx;
+    pthread_cond_t cv;
+    queue<string> _queue;
+    pthread_t _thread;
+    bool stopping = false;
+
+    Logger(const string &file) {
+        ofs.open(file, ios::out | ios::trunc);
+        if (!ofs.is_open())
+            throw runtime_error("Cannot open log file: " + file);
+
+        pthread_mutex_init(&mtx, nullptr);
+        pthread_cond_init(&cv,  nullptr);
+
+        pthread_create(&_thread, nullptr, threadEntry, this);
     }
 
     ~Logger() {
-        if (log_file.is_open()) {
-            log_file.close();
-        }
+        pthread_mutex_lock(&mtx);
+        stopping = true;
+        pthread_mutex_unlock(&mtx);
+        pthread_cond_signal(&cv);
+        pthread_join(_thread, nullptr);
+
+        ofs.close();
+        pthread_mutex_destroy(&mtx);
+        pthread_cond_destroy(&cv);
     }
 
-    void log(const string &msg) {
+    void log(const std::string &msg) {
+        pthread_mutex_lock(&mtx);
         string timestamp = getCurrentTime();
-        string logMsg = "[" + timestamp + "] " + msg;
-
-        cout << logMsg << endl;
-        if (log_file.is_open()) log_file << logMsg << endl;
+        string log_msg = "[" + timestamp + "] " + msg;
+        _queue.push(log_msg);
+        pthread_mutex_unlock(&mtx);
+        pthread_cond_signal(&cv);
     }
 
-private:
-    ofstream log_file;
+    static void* threadEntry(void* arg) {
+        return ((Logger*)arg)->process();
+    }
+
+    void* process() {
+        while (true) {
+            pthread_mutex_lock(&mtx);
+            while (_queue.empty() && !stopping) {
+                pthread_cond_wait(&cv, &mtx);
+            }
+            if (_queue.empty() && stopping) {
+                pthread_mutex_unlock(&mtx);
+                break;
+            }
+
+            string msg = _queue.front();
+            _queue.pop();
+            pthread_mutex_unlock(&mtx);
+
+            ofs << msg << "\n";
+            ofs.flush();
+        }
+        return nullptr;
+    }
 };
