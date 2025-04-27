@@ -8,7 +8,7 @@
 using namespace std;
 using namespace std::chrono;
 
-CircularBuffer buffer(10);
+CircularBuffer buffer(10); //change buffer size here
 vector<pthread_t> producer_threads, consumer_threads;
 
 void* producer(void* arg) {
@@ -54,6 +54,7 @@ int main() {
     add_producer();
     add_consumer();
 
+    //change number of iterations here
     for (int i = 0; i < 8; ++i) {
         int count = buffer.count;   
         int size = buffer.SIZE;  
