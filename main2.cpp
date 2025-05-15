@@ -15,7 +15,7 @@ vector<pthread_t> producer_threads, consumer_threads;
 void* producer(void* arg) {
     while (buffer->running) {
         int item = rand() % 100;
-        buffer->insertItem((int)arg, item);
+        buffer->insertItem(*(int*)arg, item);
         usleep(500000);
     }
     return nullptr;
@@ -23,7 +23,7 @@ void* producer(void* arg) {
 
 void* consumer(void* arg) {
     while (buffer->running) {
-        buffer->removeItem((int)arg);
+        buffer->removeItem(*(int*)arg);
         usleep(500000);
     }
     return nullptr;
