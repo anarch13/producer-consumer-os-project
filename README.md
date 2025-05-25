@@ -1,3 +1,3 @@
-# producer-consumer-os-project
+# CSC-204-OS-Project
 
 The Producer Consumer Problem is a classic example of synchronization problem, where producers and consumer share a buffer. Producers generate data and place it in the shared buffer, and consumers retrieve data from the buffer. To ensure proper synchronization in this problem, we have to use synchronization mechanisms like semaphores, monitors/condition variables. In this project, we implement a dynamic thread adjustment mechanism that adapts the number of active producer and consumer threads based on buffer status. This approach improves resource utilization and reduces bottlenecks by scaling thread activity.
