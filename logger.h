@@ -13,8 +13,6 @@ using namespace std;
 using namespace std::chrono;
 
 string getCurrentTime() {
-    using namespace std::chrono;
-    
     auto now = system_clock::now();
     auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % 1000; 
 
