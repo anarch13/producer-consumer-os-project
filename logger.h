@@ -28,7 +28,6 @@ string getCurrentTime() {
     return ss.str();
 }
 
-
 struct Logger {
     ofstream ofs;
     pthread_mutex_t mtx;
